@@ -5,15 +5,24 @@ const el = {
   secExam: document.getElementById("secExam"),
   search: document.getElementById("search"),
   source: document.getElementById("source"),
+  clearFilters: document.getElementById("clearFilters"),
+  resetAnswers: document.getElementById("resetAnswers"),
   prev: document.getElementById("prev"),
   next: document.getElementById("next"),
   pageInfo: document.getElementById("pageInfo"),
   countInfo: document.getElementById("countInfo"),
+  progressInfo: document.getElementById("progressInfo"),
+  progressFill: document.getElementById("progressFill"),
   cards: document.getElementById("cards"),
   empty: document.getElementById("empty"),
+  toTop: document.getElementById("toTop"),
 };
 
 let QUESTIONS = [];
+
+function isCtQuestion(q) {
+  return /(^|\s)ct(\s|$)|critical\s*thinking/i.test(String((q && q.lecture) || ""));
+}
 
 function escapeHtml(str) {
   return String(str)
@@ -25,14 +34,14 @@ function escapeHtml(str) {
 }
 
 function updateSectionButtons() {
-  const lectureCount = QUESTIONS.filter((q) => q.section === "lecture").length;
-  const examCount = QUESTIONS.filter((q) => q.section === "exam").length;
+  const lectureCount = QUESTIONS.filter((q) => q.section === "lecture" && !isCtQuestion(q)).length;
+  const examCount = QUESTIONS.filter((q) => q.section === "exam" && !isCtQuestion(q)).length;
   el.secLecture.textContent = "Lectures (" + lectureCount + ")";
   el.secExam.textContent = "Exams (" + examCount + ")";
 }
 
 function getSectionData() {
-  return QUESTIONS.filter((q) => q.section === state.section);
+  return QUESTIONS.filter((q) => q.section === state.section && !isCtQuestion(q));
 }
 
 function buildSourceFilter() {
@@ -67,6 +76,49 @@ function resetQuestion(id) {
   render();
 }
 
+function isTypingElement(target) {
+  const tag = target && target.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (target && target.isContentEditable);
+}
+
+function getProgress(data) {
+  const answered = data.filter((q) => state.selected.has(q.id)).length;
+  const correct = data.filter((q) => q.answer != null && state.selected.get(q.id) === q.answer).length;
+  const accuracy = answered ? Math.round((correct / answered) * 100) : 0;
+  const attempted = data.length ? Math.round((answered / data.length) * 100) : 0;
+  return { answered, correct, accuracy, attempted };
+}
+
+function previousPage() {
+  if (state.page > 1) {
+    state.page -= 1;
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+}
+
+function nextPage() {
+  const total = Math.max(1, Math.ceil(filteredData().length / state.pageSize));
+  if (state.page < total) {
+    state.page += 1;
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+}
+
+function clearActiveFilters() {
+  state.search = "";
+  state.source = "all";
+  el.search.value = "";
+  buildSourceFilter();
+  resetToFirstPage();
+}
+
+function resetAllAnswers() {
+  state.selected.clear();
+  render();
+}
+
 function render() {
   el.secLecture.classList.toggle("active", state.section === "lecture");
   el.secExam.classList.toggle("active", state.section === "exam");
@@ -75,16 +127,32 @@ function render() {
   const totalPages = Math.max(1, Math.ceil(data.length / state.pageSize));
   if (state.page > totalPages) state.page = totalPages;
 
-  const answeredCount = data.filter((q) => state.selected.has(q.id)).length;
-  const correctCount = data.filter((q) => q.answer != null && state.selected.get(q.id) === q.answer).length;
+  const progress = getProgress(data);
 
   const start = (state.page - 1) * state.pageSize;
   const rows = data.slice(start, start + state.pageSize);
+  const shownStart = data.length ? start + 1 : 0;
+  const shownEnd = start + rows.length;
 
-  el.countInfo.textContent = String(data.length) + " question(s) | " + answeredCount + " answered | " + correctCount + " correct";
+  el.countInfo.textContent =
+    "Showing " +
+    shownStart +
+    "-" +
+    shownEnd +
+    " of " +
+    data.length +
+    " | " +
+    progress.answered +
+    " answered | " +
+    progress.correct +
+    " correct";
   el.pageInfo.textContent = "Page " + state.page + " / " + totalPages;
   el.prev.disabled = state.page <= 1;
   el.next.disabled = state.page >= totalPages;
+  el.progressFill.style.width = progress.attempted + "%";
+  el.progressInfo.textContent = progress.answered
+    ? progress.correct + "/" + progress.answered + " correct (" + progress.accuracy + "% accuracy) · " + progress.attempted + "% attempted"
+    : "No answers yet. Start answering to track progress.";
 
   if (!rows.length) {
     el.cards.innerHTML = "";
@@ -205,26 +273,53 @@ el.source.addEventListener("change", () => {
   resetToFirstPage();
 });
 
-el.prev.addEventListener("click", () => {
-  if (state.page > 1) {
-    state.page -= 1;
-    render();
+el.clearFilters.addEventListener("click", clearActiveFilters);
+el.resetAnswers.addEventListener("click", resetAllAnswers);
+
+el.prev.addEventListener("click", previousPage);
+el.next.addEventListener("click", nextPage);
+
+document.addEventListener("keydown", (event) => {
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+  if (event.key === "/") {
+    event.preventDefault();
+    el.search.focus();
+    el.search.select();
+    return;
   }
+
+  if (event.key === "Escape") {
+    if (document.activeElement === el.search && el.search.value) {
+      el.search.value = "";
+      state.search = "";
+      resetToFirstPage();
+      return;
+    }
+  }
+
+  if (isTypingElement(document.activeElement)) return;
+  if (event.key === "ArrowLeft") previousPage();
+  if (event.key === "ArrowRight") nextPage();
 });
 
-el.next.addEventListener("click", () => {
-  const total = Math.max(1, Math.ceil(filteredData().length / state.pageSize));
-  if (state.page < total) {
-    state.page += 1;
-    render();
-  }
+window.addEventListener(
+  "scroll",
+  () => {
+    el.toTop.classList.toggle("visible", window.scrollY > 360);
+  },
+  { passive: true }
+);
+
+el.toTop.addEventListener("click", () => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
 async function init() {
   try {
     const response = await fetch("./questions.json", { cache: "force-cache" });
     if (!response.ok) throw new Error("Failed to fetch questions.json");
-    QUESTIONS = await response.json();
+    QUESTIONS = (await response.json()).filter((q) => !isCtQuestion(q));
     updateSectionButtons();
     buildSourceFilter();
     render();
