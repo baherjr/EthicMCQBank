@@ -1,5 +1,5 @@
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
-const state = { section: "lecture", search: "", source: "all", page: 1, pageSize: 20, revealed: new Set() };
+const state = { section: "lecture", search: "", source: "all", page: 1, pageSize: 20, selected: new Map() };
 const el = {
   secLecture: document.getElementById("secLecture"),
   secExam: document.getElementById("secExam"),
@@ -51,9 +51,20 @@ function filteredData() {
   return getSectionData().filter((q) => {
     if (state.source !== "all" && q.source !== state.source) return false;
     if (!s) return true;
-    const hay = [q.text, q.explanation, q.options.join(" "), q.source, q.lecture, q.bloom].join(" ").toLowerCase();
+    const hay = [q.text, q.explanation, (q.options || []).join(" "), q.source, q.lecture, q.bloom].join(" ").toLowerCase();
     return hay.includes(s);
   });
+}
+
+function answerQuestion(id, optionIndex) {
+  if (state.selected.has(id)) return;
+  state.selected.set(id, optionIndex);
+  render();
+}
+
+function resetQuestion(id) {
+  state.selected.delete(id);
+  render();
 }
 
 function render() {
@@ -64,10 +75,13 @@ function render() {
   const totalPages = Math.max(1, Math.ceil(data.length / state.pageSize));
   if (state.page > totalPages) state.page = totalPages;
 
+  const answeredCount = data.filter((q) => state.selected.has(q.id)).length;
+  const correctCount = data.filter((q) => q.answer != null && state.selected.get(q.id) === q.answer).length;
+
   const start = (state.page - 1) * state.pageSize;
   const rows = data.slice(start, start + state.pageSize);
 
-  el.countInfo.textContent = String(data.length) + " question(s)";
+  el.countInfo.textContent = String(data.length) + " question(s) | " + answeredCount + " answered | " + correctCount + " correct";
   el.pageInfo.textContent = "Page " + state.page + " / " + totalPages;
   el.prev.disabled = state.page <= 1;
   el.next.disabled = state.page >= totalPages;
@@ -83,29 +97,51 @@ function render() {
   el.cards.innerHTML = rows
     .map((q, idx) => {
       const displayIndex = start + idx + 1;
-      const shown = state.revealed.has(q.id);
+      const selectedOption = state.selected.get(q.id);
+      const hasAnswer = state.selected.has(q.id);
+      const sourceCount = q.sources && q.sources.length > 1 ? " - merged from " + q.sources.length + " files" : "";
+
       const optionsHtml = (q.options || [])
         .map((opt, oi) => {
-          const isCorrect = shown && q.answer === oi;
+          const classes = ["opt-btn"];
+          if (hasAnswer) {
+            if (q.answer === oi) classes.push("right-answer");
+            if (selectedOption === oi && q.answer === oi) classes.push("correct");
+            if (selectedOption === oi && q.answer !== oi) classes.push("wrong");
+          }
           return (
-            '<div class="opt ' +
-            (isCorrect ? "correct" : "") +
-            '"><strong>' +
+            '<button class="' +
+            classes.join(" ") +
+            '" type="button" onclick="answerQuestion(' +
+            q.id +
+            "," +
+            oi +
+            ')" ' +
+            (hasAnswer ? "disabled" : "") +
+            '><span class="opt-letter">' +
             (LETTERS[oi] || oi + 1) +
-            ".</strong> " +
+            ".</span> " +
             escapeHtml(opt) +
-            "</div>"
+            "</button>"
           );
         })
         .join("");
 
-      const sourceCount = q.sources && q.sources.length > 1 ? " · merged from " + q.sources.length + " files" : "";
-      const answerNote = shown
-        ? q.answer == null
-          ? '<span class="note">Answer key not available.</span>'
-          : '<span class="note">Correct answer: ' + (LETTERS[q.answer] || q.answer + 1) + "</span>"
-        : "";
-      const expHtml = shown && q.explanation ? '<div class="exp"><strong>Explanation:</strong> ' + escapeHtml(q.explanation) + "</div>" : "";
+      let feedbackHtml = "";
+      if (hasAnswer) {
+        if (q.answer == null) {
+          feedbackHtml = '<span class="result neutral">No answer key available for this question.</span>';
+        } else if (selectedOption === q.answer) {
+          feedbackHtml = '<span class="result ok">Correct answer.</span>';
+        } else {
+          feedbackHtml = '<span class="result bad">Wrong answer. Correct choice: ' + (LETTERS[q.answer] || q.answer + 1) + ".</span>";
+        }
+      }
+
+      const expHtml = hasAnswer && q.explanation ? '<div class="exp"><strong>Explanation:</strong> ' + escapeHtml(q.explanation) + "</div>" : "";
+      const actionsHtml = hasAnswer
+        ? '<button class="btn btn-ghost" type="button" onclick="resetQuestion(' + q.id + ')">Try again</button>'
+        : '<span class="note">Choose one option to get instant feedback.</span>';
 
       return (
         '<article class="card"><div class="meta"><span class="badge">#' +
@@ -124,12 +160,9 @@ function render() {
         escapeHtml(q.text) +
         '</div><div class="opts">' +
         (optionsHtml || '<div class="note">Options not available in source.</div>') +
-        '</div><div class="actions"><button class="btn" type="button" onclick="toggleReveal(' +
-        q.id +
-        ')">' +
-        (shown ? "Hide answer" : "Show answer") +
-        "</button>" +
-        answerNote +
+        '</div><div class="actions">' +
+        actionsHtml +
+        feedbackHtml +
         "</div>" +
         expHtml +
         "</article>"
@@ -138,18 +171,13 @@ function render() {
     .join("");
 }
 
+window.answerQuestion = answerQuestion;
+window.resetQuestion = resetQuestion;
+
 function resetToFirstPage() {
   state.page = 1;
   render();
 }
-
-function toggleReveal(id) {
-  if (state.revealed.has(id)) state.revealed.delete(id);
-  else state.revealed.add(id);
-  render();
-}
-
-window.toggleReveal = toggleReveal;
 
 el.secLecture.addEventListener("click", () => {
   if (state.section === "lecture") return;

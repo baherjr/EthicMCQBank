@@ -5,36 +5,49 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ASU 113 - Deduplicated MCQ Bank</title>
 <style>
-:root{--bg:#0b0d12;--panel:#121722;--panel2:#1a2130;--line:#293244;--text:#e6ebf4;--muted:#93a0b5;--accent:#60a5fa;--exam:#f59e0b;--correct:#22c55e}
+:root{--bg:#070b14;--panel:#121a2a;--panel2:#182337;--line:#2f405c;--text:#e8edf8;--muted:#95a4bf;--accent:#7aa2ff;--exam:#f59e0b;--correct:#22c55e;--wrong:#ef4444}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
-.header{position:sticky;top:0;z-index:20;background:rgba(11,13,18,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:16px}
-.h-wrap{max-width:1100px;margin:0 auto;display:grid;gap:10px}
-.title{font-size:20px;font-weight:700}
+body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:radial-gradient(1200px 500px at 20% -10%,#1d2b4f 0,transparent 60%),radial-gradient(1000px 450px at 100% -20%,#3a204f 0,transparent 55%),var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
+.header{position:sticky;top:0;z-index:20;background:rgba(8,12,20,.72);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:16px}
+.h-wrap{max-width:1120px;margin:0 auto;display:grid;gap:12px}
+.title{font-size:clamp(20px,2.2vw,28px);font-weight:800;letter-spacing:.2px}
 .subtitle{font-size:13px;color:var(--muted)}
 .controls{display:grid;gap:10px;grid-template-columns:1fr}
-@media(min-width:860px){.controls{grid-template-columns:auto 1fr auto auto auto;align-items:center}}
+@media(min-width:930px){.controls{grid-template-columns:auto 1fr auto auto auto;align-items:center}}
 .seg{display:flex;gap:8px;flex-wrap:wrap}
-.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:8px 12px;border-radius:9px;cursor:pointer;font-size:13px}
-.btn.active{border-color:var(--accent);background:#162238;color:#dbeafe}
-.btn.exam.active{border-color:var(--exam);background:#2a210f;color:#fde68a}
-input,select{background:var(--panel);border:1px solid var(--line);color:var(--text);padding:8px 10px;border-radius:9px;font-size:13px;min-width:0}
+.btn{border:1px solid var(--line);background:linear-gradient(180deg,#17243a 0,#121b2d 100%);color:var(--text);padding:9px 12px;border-radius:11px;cursor:pointer;font-size:13px;transition:all .2s ease}
+.btn.active{border-color:var(--accent);background:linear-gradient(180deg,#223458 0,#182744 100%);box-shadow:0 0 0 1px rgba(122,162,255,.2) inset}
+.btn.exam.active{border-color:var(--exam);background:linear-gradient(180deg,#3a2b12 0,#2a2011 100%);color:#fde68a}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:transparent}
+input,select{background:rgba(20,31,49,.9);border:1px solid var(--line);color:var(--text);padding:10px 12px;border-radius:11px;font-size:13px;min-width:0;outline:none;transition:border-color .2s ease,box-shadow .2s ease}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(122,162,255,.16)}
 .stat{font-size:12px;color:var(--muted);white-space:nowrap}
-.main{max-width:1100px;margin:18px auto;padding:0 16px 32px}
-.cards{display:grid;gap:12px}
-.card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:14px}
-.meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
-.badge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--panel2)}
-.badge.section-lecture{border-color:#1e3a8a;color:#93c5fd;background:#0f1a2e}
-.badge.section-exam{border-color:#854d0e;color:#fde68a;background:#2c220f}
+.main{max-width:1120px;margin:20px auto;padding:0 16px 36px}
+.cards{display:grid;gap:14px}
+.card{border:1px solid var(--line);background:linear-gradient(180deg,rgba(20,31,49,.92) 0,rgba(15,23,36,.92) 100%);border-radius:14px;padding:16px;box-shadow:0 8px 26px rgba(0,0,0,.25);transition:transform .2s ease,border-color .2s ease}
+.card:hover{transform:translateY(-2px);border-color:#4b6087}
+.meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.badge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:rgba(17,28,44,.9)}
+.badge.section-lecture{border-color:#375996;color:#9bc5ff;background:#13233f}
+.badge.section-exam{border-color:#8d5a18;color:#fde68a;background:#37280f}
 .q{font-size:15px;margin:6px 0 12px}
-.opts{display:grid;gap:6px}
-.opt{border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:8px 10px;font-size:14px;color:#d5deed}
-.opt.correct{border-color:rgba(34,197,94,.55);background:rgba(34,197,94,.1);color:#c7f9d8}
+.opts{display:grid;gap:8px}
+.opt-btn{width:100%;text-align:left;border:1px solid #324766;background:#1a2a43;color:#dce6f7;border-radius:10px;padding:10px 12px;font-size:14px;cursor:pointer;transition:all .2s ease}
+.opt-btn:hover{border-color:#5d78a8;background:#203456}
+.opt-btn:disabled{cursor:default;opacity:1}
+.opt-btn.right-answer{border-color:rgba(34,197,94,.5)}
+.opt-btn.correct{border-color:rgba(34,197,94,.7);background:rgba(34,197,94,.16);color:#d9ffe8}
+.opt-btn.wrong{border-color:rgba(239,68,68,.75);background:rgba(239,68,68,.13);color:#ffd8d8}
+.opt-letter{display:inline-block;min-width:22px;font-weight:700;color:#b8c7e6}
 .actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .note{font-size:12px;color:var(--muted)}
-.exp{margin-top:10px;border-left:3px solid var(--accent);padding:8px 10px;background:#111c2f;border-radius:0 8px 8px 0;font-size:13px;color:#ccdaef}
-.empty{padding:40px 0;text-align:center;color:var(--muted)}
+.result{font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid}
+.result.ok{color:#c9f8dc;border-color:rgba(34,197,94,.45);background:rgba(34,197,94,.14)}
+.result.bad{color:#ffd0d0;border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.14)}
+.result.neutral{color:#d5e0f5;border-color:#405882;background:#17253d}
+.exp{margin-top:10px;border-left:3px solid var(--accent);padding:9px 11px;background:#14233b;border-radius:0 10px 10px 0;font-size:13px;color:#d7e5fb}
+.empty{padding:48px 0;text-align:center;color:var(--muted)}
 .pager{display:flex;gap:8px;align-items:center;justify-content:flex-end}
 </style>
 </head>
@@ -47,7 +60,7 @@ input,select{background:var(--panel);border:1px solid var(--line);color:var(--te
     </div>
     <div class="controls">
       <div class="seg"><button id="secLecture" class="btn active" type="button">Lectures</button><button id="secExam" class="btn exam" type="button">Exams</button></div>
-      <input id="search" type="text" placeholder="Search questions...">
+      <input id="search" type="text" placeholder="Search questions..." autocomplete="off">
       <select id="source"></select>
       <div class="pager"><button id="prev" class="btn" type="button">Prev</button><span id="pageInfo" class="stat"></span><button id="next" class="btn" type="button">Next</button></div>
       <div id="countInfo" class="stat"></div>
