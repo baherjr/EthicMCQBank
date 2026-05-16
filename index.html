@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASU 113 - Deduplicated MCQ Bank</title>
+<style>
+:root{--bg:#0b0d12;--panel:#121722;--panel2:#1a2130;--line:#293244;--text:#e6ebf4;--muted:#93a0b5;--accent:#60a5fa;--exam:#f59e0b;--correct:#22c55e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+.header{position:sticky;top:0;z-index:20;background:rgba(11,13,18,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:16px}
+.h-wrap{max-width:1100px;margin:0 auto;display:grid;gap:10px}
+.title{font-size:20px;font-weight:700}
+.subtitle{font-size:13px;color:var(--muted)}
+.controls{display:grid;gap:10px;grid-template-columns:1fr}
+@media(min-width:860px){.controls{grid-template-columns:auto 1fr auto auto auto;align-items:center}}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--text);padding:8px 12px;border-radius:9px;cursor:pointer;font-size:13px}
+.btn.active{border-color:var(--accent);background:#162238;color:#dbeafe}
+.btn.exam.active{border-color:var(--exam);background:#2a210f;color:#fde68a}
+input,select{background:var(--panel);border:1px solid var(--line);color:var(--text);padding:8px 10px;border-radius:9px;font-size:13px;min-width:0}
+.stat{font-size:12px;color:var(--muted);white-space:nowrap}
+.main{max-width:1100px;margin:18px auto;padding:0 16px 32px}
+.cards{display:grid;gap:12px}
+.card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:14px}
+.meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.badge{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--panel2)}
+.badge.section-lecture{border-color:#1e3a8a;color:#93c5fd;background:#0f1a2e}
+.badge.section-exam{border-color:#854d0e;color:#fde68a;background:#2c220f}
+.q{font-size:15px;margin:6px 0 12px}
+.opts{display:grid;gap:6px}
+.opt{border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:8px 10px;font-size:14px;color:#d5deed}
+.opt.correct{border-color:rgba(34,197,94,.55);background:rgba(34,197,94,.1);color:#c7f9d8}
+.actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.note{font-size:12px;color:var(--muted)}
+.exp{margin-top:10px;border-left:3px solid var(--accent);padding:8px 10px;background:#111c2f;border-radius:0 8px 8px 0;font-size:13px;color:#ccdaef}
+.empty{padding:40px 0;text-align:center;color:var(--muted)}
+.pager{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="h-wrap">
+    <div>
+      <div class="title">ASU 113 - Deduplicated MCQ Bank</div>
+      <div class="subtitle">Collected from all HTML files. Duplicate questions removed. Exam files are in a separate section.</div>
+    </div>
+    <div class="controls">
+      <div class="seg"><button id="secLecture" class="btn active" type="button">Lectures</button><button id="secExam" class="btn exam" type="button">Exams</button></div>
+      <input id="search" type="text" placeholder="Search questions...">
+      <select id="source"></select>
+      <div class="pager"><button id="prev" class="btn" type="button">Prev</button><span id="pageInfo" class="stat"></span><button id="next" class="btn" type="button">Next</button></div>
+      <div id="countInfo" class="stat"></div>
+    </div>
+  </div>
+</header>
+<main class="main">
+  <div id="cards" class="cards"></div>
+  <div id="empty" class="empty">Loading questions...</div>
+</main>
+<script src="./app.js" defer></script>
+</body>
+</html>
