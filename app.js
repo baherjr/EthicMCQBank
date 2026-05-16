@@ -1,10 +1,10 @@
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
-const state = { section: "lecture", search: "", source: "all", page: 1, pageSize: 20, selected: new Map() };
+const state = { section: "lecture", search: "", lectureFilter: "all", page: 1, pageSize: 20, selected: new Map() };
 const el = {
   secLecture: document.getElementById("secLecture"),
   secExam: document.getElementById("secExam"),
   search: document.getElementById("search"),
-  source: document.getElementById("source"),
+  lectureFilter: document.getElementById("lectureFilter"),
   clearFilters: document.getElementById("clearFilters"),
   resetAnswers: document.getElementById("resetAnswers"),
   prev: document.getElementById("prev"),
@@ -44,23 +44,32 @@ function getSectionData() {
   return QUESTIONS.filter((q) => q.section === state.section && !isCtQuestion(q));
 }
 
-function buildSourceFilter() {
-  const sectionData = getSectionData();
-  const set = new Set(sectionData.map((q) => q.source));
-  const sources = ["all"].concat(Array.from(set).sort());
-  el.source.innerHTML = sources
-    .map((s) => '<option value="' + escapeHtml(s) + '">' + (s === "all" ? "All sources" : escapeHtml(s)) + "</option>")
+function getLectureNumber(q) {
+  const text = String((q && q.lecture) || "");
+  const match = text.match(/(?:lecture\s*)?l?\s*([1-9])\b/i);
+  return match ? match[1] : "";
+}
+
+function lectureLabel(value) {
+  return value === "all" ? "All lectures" : "Lecture " + value;
+}
+
+function buildLectureFilter() {
+  const options = state.section === "lecture" ? ["all", "1", "2", "3", "4", "5", "6", "7", "8", "9"] : ["all"];
+  el.lectureFilter.innerHTML = options
+    .map((s) => '<option value="' + escapeHtml(s) + '">' + escapeHtml(lectureLabel(s)) + "</option>")
     .join("");
-  if (!sources.includes(state.source)) state.source = "all";
-  el.source.value = state.source;
+  if (!options.includes(state.lectureFilter)) state.lectureFilter = "all";
+  el.lectureFilter.value = state.lectureFilter;
+  el.lectureFilter.disabled = state.section !== "lecture";
 }
 
 function filteredData() {
   const s = state.search.trim().toLowerCase();
   return getSectionData().filter((q) => {
-    if (state.source !== "all" && q.source !== state.source) return false;
+    if (state.section === "lecture" && state.lectureFilter !== "all" && getLectureNumber(q) !== state.lectureFilter) return false;
     if (!s) return true;
-    const hay = [q.text, q.explanation, (q.options || []).join(" "), q.source, q.lecture, q.bloom].join(" ").toLowerCase();
+    const hay = [q.text, q.explanation, (q.options || []).join(" "), q.source, lectureLabel(getLectureNumber(q)), q.bloom].join(" ").toLowerCase();
     return hay.includes(s);
   });
 }
@@ -108,9 +117,9 @@ function nextPage() {
 
 function clearActiveFilters() {
   state.search = "";
-  state.source = "all";
+  state.lectureFilter = "all";
   el.search.value = "";
-  buildSourceFilter();
+  buildLectureFilter();
   resetToFirstPage();
 }
 
@@ -168,6 +177,7 @@ function render() {
       const selectedOption = state.selected.get(q.id);
       const hasAnswer = state.selected.has(q.id);
       const sourceCount = q.sources && q.sources.length > 1 ? " - merged from " + q.sources.length + " files" : "";
+      const lectureTag = getLectureNumber(q);
 
       const optionsHtml = (q.options || [])
         .map((opt, oi) => {
@@ -219,7 +229,7 @@ function render() {
         '">' +
         (q.section === "exam" ? "Exam" : "Lecture") +
         "</span>" +
-        (q.lecture ? '<span class="badge">' + escapeHtml(q.lecture) + "</span>" : "") +
+        (lectureTag ? '<span class="badge">' + escapeHtml(lectureLabel(lectureTag)) + "</span>" : "") +
         (q.bloom ? '<span class="badge">' + escapeHtml(q.bloom) + "</span>" : "") +
         '<span class="badge">' +
         escapeHtml(q.source) +
@@ -250,16 +260,16 @@ function resetToFirstPage() {
 el.secLecture.addEventListener("click", () => {
   if (state.section === "lecture") return;
   state.section = "lecture";
-  state.source = "all";
-  buildSourceFilter();
+  state.lectureFilter = "all";
+  buildLectureFilter();
   resetToFirstPage();
 });
 
 el.secExam.addEventListener("click", () => {
   if (state.section === "exam") return;
   state.section = "exam";
-  state.source = "all";
-  buildSourceFilter();
+  state.lectureFilter = "all";
+  buildLectureFilter();
   resetToFirstPage();
 });
 
@@ -268,8 +278,8 @@ el.search.addEventListener("input", () => {
   resetToFirstPage();
 });
 
-el.source.addEventListener("change", () => {
-  state.source = el.source.value;
+el.lectureFilter.addEventListener("change", () => {
+  state.lectureFilter = el.lectureFilter.value;
   resetToFirstPage();
 });
 
@@ -321,7 +331,7 @@ async function init() {
     if (!response.ok) throw new Error("Failed to fetch questions.json");
     QUESTIONS = (await response.json()).filter((q) => !isCtQuestion(q));
     updateSectionButtons();
-    buildSourceFilter();
+    buildLectureFilter();
     render();
   } catch (error) {
     console.error(error);
